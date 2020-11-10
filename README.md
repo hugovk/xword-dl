@@ -10,6 +10,7 @@ Currently, `xword-dl` supports:
 * The Washington Post
 * USA Today
 * The Atlantic
+* Vox
 
 To download a puzzle, install `xword-dl` and run it on the command line.
 

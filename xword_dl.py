@@ -2,6 +2,7 @@
 
 import argparse
 import base64
+import datetime
 import json
 import os
 import sys
@@ -17,7 +18,7 @@ from bs4 import BeautifulSoup
 from html2text import html2text
 from unidecode import unidecode
 
-__version__ = '2020.11.9'
+__version__ = '2020.11.10'
 
 class BaseDownloader:
     def __init__(self, output=None):
@@ -210,6 +211,37 @@ class AtlanticDownloader(AmuseLabsDownloader):
 
     def find_solver(self, url):
         self.url = url
+
+class VoxDownloader(AmuseLabsDownloader):
+    def __init__(self, output=None, **kwargs):
+        super().__init__(output, **kwargs)
+
+        self.picker_url = 'https://cdn3.amuselabs.com/vox/date-picker?set=vox'
+        self.url_from_id = 'https://cdn3.amuselabs.com/vox/crossword?id={puzzle_id}&set=vox'
+
+        self.outlet_prefix = 'Vox'
+
+    def guess_date_from_id(self):
+        self.date = self.id.split('_')[1]
+
+    def find_solver(self, url):
+        self.url = url
+
+        query = urllib.parse.urlparse(url).query
+        query_id = urllib.parse.parse_qs(query)['id']
+        self.id = query_id[0]
+
+    def save_puz(self):
+        if not self.puzfile.title:
+            self.guess_date_from_id()
+            self.dt = datetime.datetime.strptime(self.date, '%Y%m%d')
+
+            if not self.output:
+                self.pick_filename()
+
+            self.puzfile.title = self.dt.strftime('%A, %B %-d, %Y')
+
+        super().save_puz()
 
 
 class NewsdayDownloader(AmuseLabsDownloader):
@@ -584,6 +616,13 @@ def main():
                                       extractor_parent],
                             help="download an Atlantic puzzle")
     atlantic_parser.set_defaults(downloader_class=AtlanticDownloader)
+
+    vox_parser = subparsers.add_parser('vox',
+                            parents=[latest_parent,
+                                      url_parent,
+                                      extractor_parent],
+                            help="download a Vox puzzle")
+    vox_parser.set_defaults(downloader_class=VoxDownloader)
 
     args = parser.parse_args()
 
